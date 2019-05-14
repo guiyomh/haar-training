@@ -22,12 +22,12 @@ type jobReq struct {
 var grabLinkCounter = 0
 var downloader = 0
 
-func Get(links []string, folderName string, grayscale bool, start, limit, height, width int) {
+func Get(links []string, folderName string, grayscale bool, start, limit, height, width int) []os.FileInfo {
 	dSize := 100
 	ich := make(chan string, len(links))
 	lch := make(chan string, limit)
 	jch := make(chan jobReq, limit)
-	rch := make(chan string, dSize)
+	rch := make(chan os.FileInfo, dSize)
 	ech := make(chan string)
 	timeout := time.Duration(10 * time.Second)
 
@@ -61,18 +61,19 @@ func Get(links []string, folderName string, grayscale bool, start, limit, height
 	}
 	close(jch)
 
-	var files []string
+	var files []os.FileInfo
 	for picNum := 1; picNum <= limit; picNum++ {
 		select {
 		case f := <-rch:
 			fmt.Printf("%s Append file: %s %s\tpicNum=%d fileslen=%d chlen=%d\n", chalk.Cyan, chalk.Reset, f, picNum, len(files), len(rch))
 			files = append(files, f)
 		case <-ech:
+			//do nothing
 		}
-
 	}
 
 	fmt.Println(chalk.Green, "Nb files :", chalk.Reset, len(files))
+	return files
 }
 
 func loadList(id int, ich <-chan string, lch chan<- string, limit int, timeout time.Duration) {
@@ -108,7 +109,7 @@ func loadList(id int, ich <-chan string, lch chan<- string, limit int, timeout t
 	}
 }
 
-func download(id int, jch <-chan jobReq, fch chan<- string, ech chan<- string, folderName string, grayscale bool, height, width int, timeout time.Duration) {
+func download(id int, jch <-chan jobReq, fch chan<- os.FileInfo, ech chan<- string, folderName string, grayscale bool, height, width int, timeout time.Duration) {
 	client := http.Client{
 		Timeout: timeout,
 	}
@@ -159,7 +160,13 @@ func download(id int, jch <-chan jobReq, fch chan<- string, ech chan<- string, f
 			ech <- j.src
 			continue
 		}
-		fch <- filePath
+		fi, err := os.Stat(filePath)
+		if err != nil {
+			fmt.Printf("worker %d: error saving: %s \tpicnum=%d\n", id, err, j.picNum)
+			ech <- j.src
+			continue
+		}
+		fch <- fi
 	}
 	downloader--
 	fmt.Printf("%s# => Finish worker %d\tgoroutine=%d\n%s", chalk.Red, id, downloader, chalk.Reset)

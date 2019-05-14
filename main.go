@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/guiyomh/haar-training/images"
@@ -28,26 +31,20 @@ func main() {
 	// CREATE COMMAND OPTION THAT TAKES FILEPATH TO POSITIVE FILE
 
 	// 1. DOWNLOAD NEGATIVE BACKGROUND FILES
-
-	links := []string{
-		"http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n12102133",
-		"http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n09436708",
-		"http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n12992868",
-		"http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n07942152",
-		"http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n02913152",
-		"http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n02913152",
-		"http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n04105893",
-		"http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n03089879",
-		"http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n10529231",
+	nf := "negative_background.txt"
+	links, err := readNegatives(nf)
+	if err != nil {
+		fmt.Printf("Error: Could not read the file: %s: %s", nf, err)
+		os.Exit(1)
 	}
-	images.Get(links, "negatives", true, 1, 2000, 200, 200)
+	files := images.Get(links, "negatives", true, 1, 2000, 200, 200)
 
 	// 2. GENERATE BG.TXT FILE FROM DOWNLOADED NEGATIVE (BACKGROUND) FILES
 
-	files, err := ioutil.ReadDir("negatives")
-	if err != nil {
-		fmt.Println("err reading dir:", err)
-	}
+	//files, err := ioutil.ReadDir("negatives")
+	// if err != nil {
+	// 	fmt.Println("err reading dir:", err)
+	// }
 	var data string
 	for _, file := range files {
 		data += "negatives/" + file.Name() + "\n"
@@ -55,6 +52,7 @@ func main() {
 	err = ioutil.WriteFile("bg.txt", []byte(data), 0666)
 	if err != nil {
 		log.Fatal(err)
+		os.Exit(1)
 	}
 
 	// 3. CREATE POSITIVE SAMPLE VECTOR FILE
@@ -65,4 +63,24 @@ func main() {
 
 	// 5. TRAIN HAAR CASCADE FILE
 	training.HaarCascade("data", 1800, 900, 20)
+}
+
+func readNegatives(file string) ([]string, error) {
+	var links = make([]string, 10)
+	f, err := os.Open(file)
+	if err != nil {
+		return links, err
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		url := strings.TrimSpace(scanner.Text())
+		if len(url) > 0 && strings.HasPrefix(url, "http") {
+			links = append(links, url)
+		}
+	}
+	if scanner.Err() != nil {
+		return links, scanner.Err()
+	}
+	return links, nil
 }

@@ -1,0 +1,10 @@
+bob the sponge
+http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n12102133
+http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n12992868
+http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n09436708
+http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n07942152
+http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n02913152
+http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n02913152
+http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n04105893
+http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n03089879
+http://www.image-net.org/api/text/imagenet.synset.geturls?wnid=n10529231
